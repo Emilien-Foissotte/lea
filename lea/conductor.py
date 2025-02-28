@@ -66,7 +66,7 @@ class Conductor:
                 scripts_dir=self.scripts_dir,
                 sql_dialect=DuckDBDialect(),
                 dataset_name=self.dataset_name,
-                project_name=self.project_name,
+                project_name=None,
             )
         lea.log.info(f"{len(self.dag.scripts):,d} scripts found")
 
@@ -215,7 +215,7 @@ class Conductor:
             )
         if self.warehouse.lower() == "duckdb":
             return databases.DuckDBClient(
-                database=os.environ.get("LEA_DUCKDB_PATH", ""),
+                database=pathlib.Path(os.environ.get("LEA_DUCKDB_PATH", "")),
                 dry_run=dry_run,
                 print_mode=print_mode,
             )
@@ -332,7 +332,11 @@ def delete_orphan_tables(session: Session):
         session.add_write_context_to_table_ref(table_ref).remove_audit_suffix()
         for table_ref in session.scripts
     }
+    # print("tables with script", tables_with_script)
+    # print("existing tables", session.existing_tables)
     table_refs_to_delete = set(session.existing_tables) - tables_with_script
+
+    print("table_refs_to_delete", table_refs_to_delete)
     if table_refs_to_delete:
         lea.log.info("🧹 Deleting orphan tables")
         delete_table_refs(
